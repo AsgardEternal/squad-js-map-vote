@@ -346,10 +346,13 @@ export default class MapVote extends DiscordBasePlugin {
                 if (this.server.players.length >= 1 && this.server.players.length < maxSeedingModePlayerCount) {
                     if (+(new Date()) - +this.server.layerHistory[ 0 ].time > 30 * 1000) {
                         const seedingMaps = Layers.layers.filter((l) => l.layerid && l.gamemode.toLowerCase() == this.options.seedingGameMode && !this.options.layerLevelBlacklist.find((fl) => l.layerid.toLowerCase().startsWith(fl.toLowerCase())))
-
+                        this.verbose(1, seedingMaps);
+                        
                         const rndMap = randomElement(seedingMaps);
                         if (this.server.currentLayer) {
+                            this.verbose(1, "checking current layer gamemode");
                             if (this.server.currentLayer.gamemode.toLowerCase() != this.options.seedingGameMode) {
+                                this.verbose(1, "checking player count");
                                 if (this.server.players.length <= this.options.instantSeedingModePlayerCount) {
                                     const newCurrentMap = rndMap.layerid;
                                     this.verbose(1, 'Going into seeding mode.');
@@ -360,12 +363,11 @@ export default class MapVote extends DiscordBasePlugin {
 
                         if (this.server.nextLayer) {
                             const nextMaps = seedingMaps.filter((l) => (!this.server.currentLayer || l.layerid != this.server.currentLayer.layerid))
-                            let rndMap2;
-                            do rndMap2 = randomElement(nextMaps);
-                            while (rndMap2.layerid == rndMap.layerid)
+                            const rndMap2 = randomElement(nextMaps);
 
-                            if (this.server.players.length < this.options.nextLayerSeedingModePlayerCount && this.server.nextLayer.gamemode.toLowerCase() != "seed") {
+                            if (this.server.players.length < this.options.nextLayerSeedingModePlayerCount && this.server.nextLayer.gamemode.toLowerCase() != this.options.seedingGameMode) {
                                 const newNextMap = rndMap2.layerid;
+                                this.verbose(1, "setting next layer to seed mode");
                                 this.server.rcon.execute(`AdminSetNextLayer ${newNextMap} `);
                             }
                         } else this.verbose(1, "Bad data (nextLayer). Seeding mode for next layer skipped to prevent errors.");
