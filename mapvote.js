@@ -7,6 +7,7 @@ import axios from "axios"
 import Layer from '../layers/layer.js';
 import fs from 'fs'
 import process from 'process'
+import Logger from "core/logger";
 
 export default class MapVote extends DiscordBasePlugin {
     static get description() {
@@ -1109,6 +1110,11 @@ export default class MapVote extends DiscordBasePlugin {
             setTimeout(this.updateLayerList, 1000);
             return;
         }
+
+        Logger.verbose('Layers', 1, 'Pulling layers...');
+        const response = await axios.post( // Change get to post for mod support
+            'http://hub.afocommunity.com/api/layers.json', [0, 1959152751]
+        );
 
         for (const layer of response.data.Maps) {
             if (!Layers.layers.find((e) => e.layerid === layer.rawName)){
