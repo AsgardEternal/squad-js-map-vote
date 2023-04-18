@@ -1110,15 +1110,17 @@ export default class MapVote extends DiscordBasePlugin {
             'http://hub.afocommunity.com/api/layers.json', [0, 1959152751]
         );
 
-        for (const layer of response.data.Maps) {
-            if (!Layers.layers.find((e) => e.layerid === layer.rawName)){
-                const hellolayer = new Layer(layer);
-                Layers._layers.set(hellolayer.layerid, hellolayer);
-            }
-        }
-
         const rconLayers = (await this.server.rcon.execute('ListLayers'))?.split('\n') || [];
         rconLayers.shift();
+
+        for (const layer of response.data.Maps) {
+            if (!Layers.layers.find((e) => e.layerid === layer.rawName)){
+                if(rconLayers.find((e) => e.layer === layer.rawName)) {
+                    const hellolayer = new Layer(layer);
+                    Layers._layers.set(hellolayer.layerid, hellolayer);
+                }
+            }
+        }
 
         // this.verbose(1, 'RCON Layers', rconLayers.length, this.mapLayer(rconLayers[ 0 ]))
         for (const layer of rconLayers) {
