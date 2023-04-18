@@ -1141,6 +1141,7 @@ export default class MapVote extends DiscordBasePlugin {
             }
         }
 
+        console.log(Layers.layers)
         this.verbose(1, 'Layer list updated', Layers.layers.length, 'total layers');
 
         // this.verbose(1, 'Layers', Layers.layers);
