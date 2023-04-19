@@ -17,7 +17,7 @@ export default class MapVote extends DiscordBasePlugin {
     static get defaultEnabled() {
         return true;
     }
-
+layer
     static get optionsSpecification() {
         return {
             ...DiscordBasePlugin.optionsSpecification,
@@ -630,7 +630,8 @@ export default class MapVote extends DiscordBasePlugin {
                 const needMoreRAAS = !bypassRaasFilter && rnd_layers.filter((l) => l.gamemode.toUpperCase() === 'RAAS').length < this.options.minRaasEntries;
                 let l;
                 let maxtries = 20;
-                do l = randomElement(needMoreRAAS ? all_layers.filter((l) => l.gamemode.toLowerCase() === "raas") : all_layers); while ((rnd_layers.find(lf => lf.layerid === l.layerid) || rnd_layers.filter(lf => lf.map.name == l.map.name).length > (this.options.allowedSameMapEntries - 1)) && --maxtries >= 0)
+                do l = randomElement(needMoreRAAS ? all_layers.filter((l) => l.gamemode.toLowerCase() === "raas") : all_layers);
+                while ((rnd_layers.find(lf => lf.layerid === l.layerid) || rnd_layers.filter(lf => lf.map.name === l.map.name).length > (this.options.allowedSameMapEntries - 1)) && --maxtries >= 0)
                 if (maxtries > 0 && l) {
                     // this.verbose(1,"Testing layer",l, maxtries);
                     rnd_layers.push(l);
@@ -1115,7 +1116,7 @@ export default class MapVote extends DiscordBasePlugin {
 
         for (const layer of response.data.Maps) {
             if (!Layers.layers.find((e) => e.layerid === layer.rawName)){
-                if(rconLayers.find((e) => e.layer === layer.rawName)) {
+                if(rconLayers.find((e) => e === layer.rawName)) {
                     const hellolayer = new Layer(layer);
                     Layers._layers.set(hellolayer.layerid, hellolayer);
                 }
@@ -1147,13 +1148,13 @@ export default class MapVote extends DiscordBasePlugin {
     mapLayer(l) {
         l = l.replace(/[^a-z_\d]/gi, '')
         // this.verbose(1, 'Parsing layer', l)
-        const gl = /^((?<mod>\w+_))?(?<level>\w+)_(?<gamemode>\w+)_(?<version>\w+)$/i.exec(l)?.groups
+        const gl = /^((?<mod>[a-z]+)_)?(?<level>[a-z]+)_(?<gamemode>[a-z]+)_(?<version>[a-z0-9]+)(_(?<team1>[a-z]+)v(?<team2>[a-z]+))?$/i.exec(l)?.groups
         // this.verbose(1, 'Parsed layer', gl)
         if (!gl || Object.keys(gl).length !== 3) return;
 
         if (!gl.level) this.verbose(1, 'Empty level', gl)
 
-        const teams = []
+        let teams = []
         for (const t of ['team1', 'team2']) {
             teams.push({
                 faction: 'Unknown',
@@ -1165,6 +1166,9 @@ export default class MapVote extends DiscordBasePlugin {
                 numberOfHelicopters: 0
             });
         }
+
+        if(gl.team1) teams[0].faction = gl.team1;
+        if(gl.team2) teams[1].faction = gl.team2;
         // this.verbose(1, 'teams', teams)
 
         return {
