@@ -1175,7 +1175,7 @@ layer
     mapLayer(l) {
         l = l.replace(/[^a-z_\d]/gi, '')
         // this.verbose(1, 'Parsing layer', l)
-        const gl = /^((?<mod>[a-z]+)_)?(?<level>[a-z]+)_(?<gamemode>[a-z]+)_(?<version>[a-z0-9]+)(_(?<team1>[a-z]+)v(?<team2>[a-z]+))?$/i.exec(l)?.groups
+        const gl = /((?<mod>[a-zA-Z0-9]+)_)?(?<level>[a-zA-Z0-9]+)_(?<gamemode>[a-zA-Z0-9]+)_(?<version>[a-zA-Z0-9]+)(_(?<team1>[a-zA-Z0-9]+)v(?<team2>[a-zA-Z0-9]+))?/.exec(l)?.groups
         // this.verbose(1, 'Parsed layer', gl)
         if (!gl || Object.keys(gl).length !== 3) return;
 
