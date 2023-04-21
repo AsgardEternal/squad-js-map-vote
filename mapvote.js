@@ -1121,20 +1121,34 @@ layer
         rconLayers.shift();
 
         for (const layer of response.data.Maps) {
+            this.verbose(1, 'pulled layer: ', layer.rawName);
             if (!Layers.layers.find((e) => e.layerid === layer.rawName)){
+                this.verbose(1, 'layer not already found?: ', layer.rawName);
                 if(rconLayers.find((e) => e === layer.rawName)) {
+                    this.verbose(1, 'layer was found in RCON response: ', layer.rawName);
                     const hellolayer = new Layer(layer);
                     Layers._layers.set(hellolayer.layerid, hellolayer);
+                }
+            } else {
+                this.verbose(1, 'layer was already pulled, checking for RCON: ', layer.rawName);
+                if (rconLayers.find((e) => e === layer.rawName)){
+                    this.verbose(1, 'layer was found in RCON: ', layer.rawName);
+                } else {
+                    this.verbose(1, 'WARNING: layer not found in RCON, removing layer: ', layer.rawName);
+                    Layers._layers.delete(layer.rawName);
                 }
             }
         }
 
         // this.verbose(1, 'RCON Layers', rconLayers.length, this.mapLayer(rconLayers[ 0 ]))
         for (const layer of rconLayers) {
+            this.verbose(1, 'layer found in RCON: ', layer);
             if (!Layers.layers.find((e) => e?.layerid === layer)) {
+                this.verbose(1, 'RCON layer was not found in fetched layers: ', layer);
                 const newLayer = this.mapLayer(layer);
                 if (!newLayer) continue;
 
+                this.verbose(1, 'RCON layer was converted to normal layer: ', newLayer.layerid);
                 if (Layers._layers && Layers._layers instanceof Map)
                     Layers._layers.set(newLayer.layerid, newLayer);
                 else
