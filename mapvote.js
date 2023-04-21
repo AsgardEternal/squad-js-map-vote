@@ -1136,7 +1136,9 @@ layer
             }
         }
 
-        console.log(Layers.layers)
+        for (const lay in Layers.layers){
+            this.verbose(1, 'mapvote found layer: ', lay.layerid);
+        }
         this.verbose(1, 'Layer list updated', Layers.layers.length, 'total layers');
 
         // this.verbose(1, 'Layers', Layers.layers);
