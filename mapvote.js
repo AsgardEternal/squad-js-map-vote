@@ -1111,8 +1111,13 @@ layer
             'http://hub.afocommunity.com/api/layers.json', [0, 1959152751]
         );
 
-        const rconLayers = (await this.server.rcon.execute('ListLayers'))?.split('\n') || [];
-        rconLayers.shift();
+        const rconRaw = (await this.server.rcon.execute('ListLayers'))?.split('\n') || [];
+        rconRaw.shift();
+
+        const rconLayers = [];
+        for (const raw of rconRaw){
+            rconLayers.push(raw.split(' ')[0]);
+        }
 
         for (const layer of response.data.Maps) {
             this.verbose(1, 'pulled layer: ', layer.rawName);
