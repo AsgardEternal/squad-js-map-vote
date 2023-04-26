@@ -86,7 +86,7 @@ export default class MapVote extends DiscordBasePlugin {
                 description: "Select Whitelist mode or Blacklist mode",
                 default: "blacklist"
             },
-            modWhiteList: {
+            modWhitelist: {
                 required: false,
                 description: "select mods (short ID) to whitelist for voting",
                 default: ["Vanilla"]
@@ -354,7 +354,7 @@ export default class MapVote extends DiscordBasePlugin {
     }
 
     getModLayers(){
-        return Layers.layers.filter((l) => this.options.modWhiteList.find((e) => e === l.modName));
+        return Layers.layers.filter((l) => this.options.modWhitelist.find((e) => e === l.modName));
     }
 
     setSeedingMode(isNewGameEvent = false) {
