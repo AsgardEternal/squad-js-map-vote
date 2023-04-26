@@ -262,7 +262,6 @@ layer
     }
 
     async mount() {
-        await this.updateLayerList();
         this.restorePersistentData();
         this.server.on('NEW_GAME', this.onNewGame);
         this.server.on('CHAT_MESSAGE', this.onChatMessage);
