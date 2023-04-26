@@ -699,7 +699,7 @@ export default class MapVote extends DiscordBasePlugin {
                     // this.verbose(1, 'rnd_layers', rnd_layers.map(l => l.layerid));
                     let l;
                     let maxtries = 10;
-                    do l = randomElement(fLayers); while ((rnd_layers.filter(lf => lf.map.name === l.map.name).length > (this.options.allowedSameMapEntries - 1)) && --maxtries >= 0)
+                    do l = randomElement(fLayers); while ((rnd_layers.filter(lf => lf.map.name === l.map.name).length > (this.options.allowedSameMapEntries - 1)) && --maxtries >= 0  && !rnd_layers.find((e) => e === l))
                     if (l) {
                         rnd_layers.push(l);
                         this.nominations[i] = l.layerid
