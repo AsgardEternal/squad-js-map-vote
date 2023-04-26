@@ -581,12 +581,12 @@ layer
         const translations = {
             'United States Army': "USA",
             'United States Marine Corps': "USMC",
-            'Russian Ground Forces': "RUS",
-            'British Army': "GB",
-            'British Armed Forces': "GB",
+            'Russian Ground Forces': "RGF",
+            'British Army': "BAF",
+            'British Armed Forces': "BAF",
             'Canadian Army': "CAF",
-            'Australian Defence Force': "AUS",
-            'Irregular Militia Forces': "MIL",
+            'Australian Defence Force': "ADF",
+            'Irregular Militia Forces': "IMF",
             'Middle Eastern Alliance': "MEA",
             'Insurgent Forces': "INS",
             'Unknown': "Unk"
@@ -723,16 +723,19 @@ layer
         if (this.nominations[1] !== "")
             this.server.rcon.execute(`AdminSetNextLayer ${this.nominations[1]} `);
 
-        function getTranslation(layer) {
-            if (translations[layer.faction]) return translations[layer.faction]
-            else if (layer.faction) {
-                const f = layer.faction.split(' ');
-                let fTag = "";
-                f.forEach((e) => {
-                    fTag += e[0]
-                });
-                return fTag.toUpperCase();
-            } else return "Unknown"
+        function getTranslation(t) {
+            if (translations[t.faction]) return translations[t.faction]
+            else {
+                const f = t.faction.split(' ');
+                if(f.length > 1) {
+                    let fTag = "";
+                    f.forEach((e) => {
+                        fTag += e[0]
+                    });
+                    return fTag.toUpperCase();
+                } else if (t.faction.length <= 5) return t.faction;
+                else return 'Unk'
+            }
         }
     }
 
@@ -894,12 +897,12 @@ layer
         const translations = {
             'United States Army': "USA",
             'United States Marine Corps': "USMC",
-            'Russian Ground Forces': "RUS",
-            'British Army': "GB",
-            'British Armed Forces': "GB",
+            'Russian Ground Forces': "RGF",
+            'British Army': "BAF",
+            'British Armed Forces': "BAF",
             'Canadian Army': "CAF",
-            'Australian Defence Force': "AUS",
-            'Irregular Militia Forces': "MIL",
+            'Australian Defence Force': "ADF",
+            'Irregular Militia Forces': "IMF",
             'Middle Eastern Alliance': "MEA",
             'Insurgent Forces': "INS",
             'Unknown': "Unk"
@@ -911,7 +914,7 @@ layer
         const assets = [];
         if (helis > 0) assets.push('Helis');
         if (tanks > 0) assets.push('Tanks');
-        const vehiclesString = assets.join('-');
+        const vehiclesString = assets.join('|');
 
         return this.options.entryFormat
             .replace(/\{map_name\}/i, layer.map.name)
@@ -924,11 +927,14 @@ layer
             if (translations[t.faction]) return translations[t.faction]
             else {
                 const f = t.faction.split(' ');
-                let fTag = "";
-                f.forEach((e) => {
-                    fTag += e[0]
-                });
-                return fTag.toUpperCase();
+                if(f.length > 1) {
+                    let fTag = "";
+                    f.forEach((e) => {
+                        fTag += e[0]
+                    });
+                    return fTag.toUpperCase();
+                } else if (t.faction.length <= 5) return t.faction;
+                else return 'Unk'
             }
         }
     }
@@ -1101,122 +1107,6 @@ layer
         }
 
         return ties.map(i => this.nominations[i]);
-    }
-
-    async updateLayerList() {
-        // Layers.layers = [];
-
-        if (!Layers.layers instanceof Array) {
-            this.verbose(1, `Could not update layer list. Re-trying in 1 second.`)
-            setTimeout(this.updateLayerList, 1000);
-            return;
-        }
-
-        Logger.verbose('Layers', 1, 'Pulling layers...');
-        const response = await axios.post( // Change get to post for mod support
-            'http://hub.afocommunity.com/api/layers.json', [0, 1959152751]
-        );
-
-        const rconRaw = (await this.server.rcon.execute('ListLayers'))?.split('\n') || [];
-        rconRaw.shift();
-
-        const rconLayers = [];
-        for (const raw of rconRaw){
-            rconLayers.push(raw.split(' ')[0]);
-        }
-
-        for (const layer of response.data.Maps) {
-            this.verbose(1, 'pulled layer: ', layer.rawName);
-            if (!Layers.layers.find((e) => e.layerid === layer.rawName)){
-                this.verbose(1, 'layer not already found?: ', layer.rawName);
-                if(rconLayers.find((e) => e === layer.rawName)) {
-                    this.verbose(1, 'layer was found in RCON response: ', layer.rawName);
-                    const hellolayer = new Layer(layer);
-                    Layers._layers.set(hellolayer.layerid, hellolayer);
-                }
-            } else {
-                this.verbose(1, 'layer was already pulled, checking for RCON: ', layer.rawName);
-                if (rconLayers.find((e) => e === layer.rawName)){
-                    this.verbose(1, 'layer was found in RCON: ', layer.rawName);
-                } else {
-                    this.verbose(1, 'WARNING: layer not found in RCON, removing layer: ', layer.rawName);
-                    Layers._layers.delete(layer.rawName);
-                }
-            }
-        }
-
-        // this.verbose(1, 'RCON Layers', rconLayers.length, this.mapLayer(rconLayers[ 0 ]))
-        for (const layer of rconLayers) {
-            this.verbose(1, 'layer found in RCON: ', layer);
-            if (!Layers.layers.find((e) => e?.layerid === layer)) {
-                this.verbose(1, 'RCON layer was not found in fetched layers: ', layer);
-                const newLayer = this.mapLayer(layer);
-                if (!newLayer) continue;
-
-                this.verbose(1, 'RCON layer was converted to normal layer: ', newLayer.layerid);
-                if (Layers._layers && Layers._layers instanceof Map)
-                    Layers._layers.set(newLayer.layerid, newLayer);
-                else
-                    Layers.layers.push(newLayer);
-            }
-        }
-
-        for (const lay of Layers.layers){
-            this.verbose(1, 'mapvote found layer: ', lay.layerid);
-        }
-        this.verbose(1, 'Layer list updated', Layers.layers.length, 'total layers');
-
-        // this.verbose(1, 'Layers', Layers.layers);
-        function parseNumberOfAssets(string) {
-            return /^x(\d)/.exec(string)[1]
-        }
-    }
-
-    mapLayer(l) {
-        l = l.replace(/[^a-z_\d]/gi, '')
-        // this.verbose(1, 'Parsing layer', l)
-        const gl = /((?<mod>[a-zA-Z0-9]+)_)?(?<level>[a-zA-Z0-9]+)_(?<gamemode>[a-zA-Z0-9]+)_(?<version>[a-zA-Z0-9]+)(_(?<team1>[a-zA-Z0-9]+)v(?<team2>[a-zA-Z0-9]+))?/.exec(l)?.groups
-        // this.verbose(1, 'Parsed layer', gl)
-        if (!gl) return;
-
-        if (!gl.level) this.verbose(1, 'Empty level', gl)
-
-        let teams = []
-        for (const t of ['team1', 'team2']) {
-            teams.push({
-                faction: 'Unknown',
-                name: 'Unknown',
-                tickets: 0,
-                commander: false,
-                vehicles: [],
-                numberOfTanks: 0,
-                numberOfHelicopters: 0
-            });
-        }
-
-        if(gl.team1) teams[0].faction = gl.team1;
-        if(gl.team2) teams[1].faction = gl.team2;
-        // this.verbose(1, 'teams', teams)
-
-        return {
-            name: l.replace(/_/g, ' '),
-            classname: gl.level,
-            layerid: l,
-            map: {
-                name: gl.level
-            },
-            gamemode: gl.gamemode,
-            gamemodeType: gl.gamemode,
-            version: gl.version,
-            size: '0.0x0.0 km',
-            sizeType: 'Playable Area',
-            numberOfCapturePoints: 0,
-            lighting: {
-                name: 'Unknown',
-                classname: 'Unknown'
-            },
-            teams: teams
-        }
     }
 
     formatChoice(choiceIndex, mapString, currentVotes, hideVoteCount) {
