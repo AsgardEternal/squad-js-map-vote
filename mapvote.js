@@ -245,7 +245,6 @@ layer
         this.endVotingGently = this.endVotingGently.bind(this);
         this.formatChoice = this.formatChoice.bind(this);
         this.updateNextMap = this.updateNextMap.bind(this);
-        this.mapLayer = this.mapLayer.bind(this);
 
         this.broadcast = async (msg) => {
             await this.server.rcon.broadcast(msg);
