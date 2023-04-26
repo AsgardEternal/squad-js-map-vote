@@ -17,7 +17,7 @@ export default class MapVote extends DiscordBasePlugin {
     static get defaultEnabled() {
         return true;
     }
-layer
+
     static get optionsSpecification() {
         return {
             ...DiscordBasePlugin.optionsSpecification,
@@ -85,6 +85,11 @@ layer
                 required: false,
                 description: "Select Whitelist mode or Blacklist mode",
                 default: "blacklist"
+            },
+            modWhiteList: {
+                required: false,
+                description: "select mods (short ID) to whitelist for voting",
+                default: ["Vanilla"]
             },
             layerLevelWhitelist: {
                 required: false,
@@ -348,6 +353,10 @@ layer
         }
     }
 
+    getModLayers(){
+        return Layers.layers.filter((l) => this.options.modWhiteList.find((e) => e === l.modName));
+    }
+
     setSeedingMode(isNewGameEvent = false) {
         this.options.seedingGameMode = this.options.seedingGameMode.toLowerCase();
         // this.msgBroadcast("[MapVote] Seeding mode active")
@@ -358,7 +367,8 @@ layer
                 const maxSeedingModePlayerCount = Math.max(this.options.nextLayerSeedingModePlayerCount, this.options.instantSeedingModePlayerCount);
                 if (this.server.players.length >= 1 && this.server.players.length < maxSeedingModePlayerCount) {
                     if (+(new Date()) - +this.server.layerHistory[0].time > 30 * 1000) {
-                        const seedingMaps = Layers.layers.filter((l) => l.layerid && l.gamemode.toLowerCase() === this.options.seedingGameMode && !this.options.layerLevelBlacklist.find((fl) => l.layerid.toLowerCase().startsWith(fl.toLowerCase())))
+                        const filterMaps = this.getModLayers();
+                        const seedingMaps = filterMaps.filter((l) => l.layerid && l.gamemode.toLowerCase() === this.options.seedingGameMode && !this.options.layerLevelBlacklist.find((fl) => l.layerid.toLowerCase().startsWith(fl.toLowerCase())))
                         this.verbose(1, seedingMaps);
 
                         const rndMap = randomElement(seedingMaps);
@@ -544,7 +554,8 @@ layer
     }
 
     matchLayers(builtString) {
-        return Layers.layers.filter(element => element.layerid.includes(builtString));
+        const modLayers = this.getModLayers();
+        return modLayers.filter(element => element.layerid.includes(builtString));
     }
 
     getMode(nomination, currentMode) {
@@ -595,7 +606,8 @@ layer
         this.factionStrings = [];
         const rnd_layers = [];
 
-        const sanitizedLayers = Layers.layers.filter((l) => l.layerid && l.map);
+        const modLayers = this.getModLayers();
+        const sanitizedLayers = modLayers.filter((l) => l.layerid && l.map);
         const maxOptions = this.options.showRerollOption ? 20 : 21;
         const optionAmount = Math.min(maxOptions, this.options.entriesAmount);
 
@@ -939,7 +951,8 @@ layer
 
     getLayersFromStringId(stringid) {
         const cls = stringid.toLowerCase().split('_');
-        const ret = Layers.layers.filter((l) => ((cls[0] === "*" || l.layerid.toLowerCase().startsWith(cls[0])) && (l.gamemode.toLowerCase().startsWith(cls[1]) || (!cls[1] && ['RAAS', 'AAS', 'INVASION'].includes(l.gamemode.toUpperCase()))) && (!cls[2] || parseInt(l.version.toLowerCase().replace(/v/gi, '')) == parseInt(cls[2].replace(/v/gi, '')))));
+        const modLayers = this.getModLayers();
+        const ret = modLayers.filter((l) => ((cls[0] === "*" || l.layerid.toLowerCase().startsWith(cls[0])) && (l.gamemode.toLowerCase().startsWith(cls[1]) || (!cls[1] && ['RAAS', 'AAS', 'INVASION'].includes(l.gamemode.toUpperCase()))) && (!cls[2] || parseInt(l.version.toLowerCase().replace(/v/gi, '')) == parseInt(cls[2].replace(/v/gi, '')))));
         // this.verbose(1,"layers from string",stringid,cls,ret)
         return ret;
     }
