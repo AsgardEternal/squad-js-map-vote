@@ -22,11 +22,11 @@ export default class MapVote extends DiscordBasePlugin {
         return {
             ...DiscordBasePlugin.optionsSpecification,
             commandPrefix:
-            {
-                required: false,
-                description: "command name to use in chat",
-                default: "!vote"
-            },
+                {
+                    required: false,
+                    description: "command name to use in chat",
+                    default: "!vote"
+                },
             entryFormat: {
                 required: false,
                 description: "The format of an entry in the voting list",
@@ -48,29 +48,29 @@ export default class MapVote extends DiscordBasePlugin {
                 default: 0
             },
             minPlayersForVote:
-            {
-                required: false,
-                description: 'number of players needed on the server for a vote to start',
-                default: 40
-            },
+                {
+                    required: false,
+                    description: 'number of players needed on the server for a vote to start',
+                    default: 40
+                },
             voteWaitTimeFromMatchStart:
-            {
-                required: false,
-                description: 'time in mins from the start of a round to the start of a new map vote',
-                default: 15
-            },
+                {
+                    required: false,
+                    description: 'time in mins from the start of a round to the start of a new map vote',
+                    default: 15
+                },
             voteBroadcastInterval:
-            {
-                required: false,
-                description: 'broadcast interval for vote notification in mins',
-                default: 7
-            },
+                {
+                    required: false,
+                    description: 'broadcast interval for vote notification in mins',
+                    default: 7
+                },
             automaticSeedingMode:
-            {
-                required: false,
-                description: 'set a seeding layer if server has less than 20 players',
-                default: true
-            },
+                {
+                    required: false,
+                    description: 'set a seeding layer if server has less than 20 players',
+                    default: true
+                },
             numberRecentMapsToExlude: {
                 required: false,
                 description: 'random layer list will not include the n. recent maps',
