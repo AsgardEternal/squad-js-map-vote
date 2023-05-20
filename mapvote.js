@@ -1,4 +1,4 @@
-// Plugin reworked by JetDave, original version by MaskedMonkeyMan
+// Plugin reworked by Skillet from the Plugin reworked by JetDave from the original version by MaskedMonkeyMan
 
 // import BasePlugin from "./base-plugin.js";
 import DiscordBasePlugin from './discord-base-plugin.js';
