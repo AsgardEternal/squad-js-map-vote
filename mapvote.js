@@ -354,7 +354,7 @@ export default class MapVote extends DiscordBasePlugin {
     }
 
     getModLayers(){
-        return Layers.layers.filter((l) => this.options.modWhitelist.find((e) => e === l.modName));
+        return Layers.layers//.filter((l) => this.options.modWhitelist.find((e) => e === l.modName));
     }
 
     setSeedingMode(isNewGameEvent = false) {
