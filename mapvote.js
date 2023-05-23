@@ -86,11 +86,6 @@ export default class MapVote extends DiscordBasePlugin {
                 description: "Select Whitelist mode or Blacklist mode",
                 default: "blacklist"
             },
-            modWhitelist: {
-                required: false,
-                description: "select mods (short ID) to whitelist for voting",
-                default: ["Vanilla"]
-            },
             layerLevelWhitelist: {
                 required: false,
                 description: 'random layer list will include only the whitelisted layers or levels. (acceptable formats: Gorodok/Gorodok_RAAS/Gorodok_AAS_v1)',
@@ -110,11 +105,6 @@ export default class MapVote extends DiscordBasePlugin {
                 required: false,
                 description: "factions to exclude in map vote. ( ex: ['CAF'] )",
                 default: []
-            },
-            minRaasEntries: {
-                required: false,
-                description: 'Minimum amount of RAAS layers in the vote list.',
-                default: 2
             },
             minGamemodeEntries: {
                 required: false,
@@ -353,8 +343,59 @@ export default class MapVote extends DiscordBasePlugin {
         }
     }
 
-    getModLayers(){
-        return Layers.layers//.filter((l) => this.options.modWhitelist.find((e) => e === l.modName));
+    getTranslation(t) {
+        const translations = {
+            'United States Army': "USA",
+            'United States Marine Corps': "USMC",
+            'Russian Ground Forces': "RGF",
+            'British Army': "BAF",
+            'British Armed Forces': "BAF",
+            'Canadian Army': "CAF",
+            'Australian Defence Force': "ADF",
+            'Irregular Militia Forces': "IMF",
+            'Middle Eastern Alliance': "MEA",
+            'Insurgent Forces': "INS",
+            'Unknown': "Unk"
+        }
+        if (translations[t.faction]) return translations[t.faction]
+        else {
+            const f = t.faction.split(' ');
+            if(f.length > 1) {
+                let fTag = "";
+                f.forEach((e) => {
+                    fTag += e[0]
+                });
+                return fTag.toUpperCase();
+            } else if (t.faction.length <= 5) return t.faction;
+            else return 'Unk'
+        }
+    }
+
+    layerfilterCorrectLayers(layers){
+        return layers.filter((l) => l.layerid && l.map);
+    }
+
+    layerfilterWlist(layers){
+        if(this.options.layerFilteringMode.toLowerCase() === "whitelist"){
+            const rawwl = layers.filter((l) => this.options.layerLevelWhitelist.find((fl) => this.getLayersFromStringId(fl).map((e => e.layerid).includes(l.layerid))));
+            if(this.options.applyBlacklistToWhitelist) return rawwl.filter((l) => !(this.options.layerLevelBlacklist.find((fl) => this.getLayersFromStringId(fl).map((e) => e.layerid).includes(l.layerid))));
+            else return rawwl;
+        } else {
+            return layers.filter((l) => !(this.options.layerLevelBlacklist.find((fl) => this.getLayersFromStringId(fl).map((e) => e.layerid).includes(l.layerid))));
+        }
+    }
+
+    layerfilterFactionBlacklist(layers){
+        return layers.filter((l) => !(this.options.factionsBlacklist.find((f) => [this.getTranslation(l.teams[0]), this.getTranslation(l.teams[1])].includes(f))));
+    }
+
+    layerfilterGamemodeWlist(layers){
+        return layers.filter((l) => this.options.gamemodeWhitelist.includes(l.gamemode.toUpperCase()));
+    }
+
+    layerfilterPrevMaps(layers){
+        const recentlyPlayedMaps = this.objArrToValArr(this.server.layerHistory.slice(0, this.options.numberRecentMapsToExlude), "layer", "map", "name");
+        return layers.filter((l) => !([this.server.currentLayer ? this.server.currentLayer.map.name : null, ...recentlyPlayedMaps].includes(l.map.name)));
     }
 
     setSeedingMode(isNewGameEvent = false) {
@@ -367,8 +408,8 @@ export default class MapVote extends DiscordBasePlugin {
                 const maxSeedingModePlayerCount = Math.max(this.options.nextLayerSeedingModePlayerCount, this.options.instantSeedingModePlayerCount);
                 if (this.server.players.length >= 1 && this.server.players.length < maxSeedingModePlayerCount) {
                     if (+(new Date()) - +this.server.layerHistory[0].time > 30 * 1000) {
-                        const filterMaps = this.getModLayers();
-                        const seedingMaps = filterMaps.filter((l) => l.layerid && l.gamemode.toLowerCase() === this.options.seedingGameMode && !this.options.layerLevelBlacklist.find((fl) => l.layerid.toLowerCase().startsWith(fl.toLowerCase())))
+                        const filterMaps = this.layerfilterWlist(this.layerfilterCorrectLayers(Layers.layers));
+                        const seedingMaps = filterMaps.filter(l => l.gamemode.toLowerCase() === this.options.seedingGameMode);
                         this.verbose(1, seedingMaps);
 
                         const rndMap = randomElement(seedingMaps);
@@ -554,60 +595,22 @@ export default class MapVote extends DiscordBasePlugin {
     }
 
     matchLayers(builtString) {
-        const modLayers = this.getModLayers();
+        const modLayers = this.layerfilterCorrectLayers(Layers.layers);
         return modLayers.filter(element => element.layerid.includes(builtString));
     }
 
-    getMode(nomination, currentMode) {
-        const mapName = nomination.map;
-        let modes = nomination.modes;
-        let mode = modes[0];
-
-        if (mode === "Any")
-            modes = this.voteRules.modes;
-
-        if (this.voteRules.mode_repeat_blacklist.includes(currentMode)) {
-            modes = modes.filter(mode => !mode.includes(currentMode));
-        }
-
-        while (modes.length > 0) {
-            mode = randomElement(modes);
-            modes = modes.filter(elem => elem !== mode);
-            if (this.matchLayers(`${mapName}_${mode}`).length > 0)
-                break;
-        }
-
-        return mode;
-    }
-
-    // TODO: right now if version is set to "Any" no caf layers will be selected
     populateNominations(steamid = null, cmdLayers = [], bypassRaasFilter = false, tries = 10) // gets nomination strings from layer options
     {
         this.options.gamemodeWhitelist.forEach((e, k, a) => a[k] = e.toUpperCase());
         // this.nominations.push(builtLayerString);
         // this.tallies.push(0);
 
-        const translations = {
-            'United States Army': "USA",
-            'United States Marine Corps': "USMC",
-            'Russian Ground Forces': "RGF",
-            'British Army': "BAF",
-            'British Armed Forces': "BAF",
-            'Canadian Army': "CAF",
-            'Australian Defence Force': "ADF",
-            'Irregular Militia Forces': "IMF",
-            'Middle Eastern Alliance': "MEA",
-            'Insurgent Forces': "INS",
-            'Unknown': "Unk"
-        }
-
         this.nominations = [];
         this.tallies = [];
         this.factionStrings = [];
         const rnd_layers = [];
 
-        const modLayers = this.getModLayers();
-        const sanitizedLayers = modLayers.filter((l) => l.layerid && l.map);
+        const sanitizedLayers = this.layerfilterCorrectLayers(Layers.layers);
         const maxOptions = this.options.showRerollOption ? 20 : 21;
         const optionAmount = Math.min(maxOptions, this.options.entriesAmount);
 
@@ -625,93 +628,45 @@ export default class MapVote extends DiscordBasePlugin {
 
         }
 
-        if (false && isRandomVote) {
-            // this.populateNominations(steamid,cmdLayers,bypassRaasFilter,)
 
+        if (cmdLayers.length === 1) while (cmdLayers.length < optionAmount) cmdLayers.push(cmdLayers[0])
 
-            const all_layers = sanitizedLayers.filter((l) =>
-                this.options.gamemodeWhitelist.includes(l.gamemode.toUpperCase()) &&
-                ![this.server.currentLayer ? this.server.currentLayer.map.name : null, ...recentlyPlayedMaps].includes(l.map.name) &&
-                (
-                    (this.options.layerFilteringMode.toLowerCase() === "blacklist" && !this.options.layerLevelBlacklist.find((fl) => this.getLayersFromStringId(fl).map((e) => e.layerid).includes(l.layerid))) ||
-                    (
-                        this.options.layerFilteringMode.toLowerCase() === "whitelist"
-                        && this.options.layerLevelWhitelist.find((fl) => this.getLayersFromStringId(fl).map((e) => e.layerid).includes(l.layerid))
-                        && !(this.options.applyBlacklistToWhitelist && this.options.layerLevelBlacklist.find((fl) => this.getLayersFromStringId(fl).map((e) => e.layerid).includes(l.layerid)))
-                    )
-                )
-                && !(this.options.factionsBlacklist.find((f) => [getTranslation(l.teams[0]), getTranslation(l.teams[1])].includes(f)))
-            );
-            for (let i = 1; i <= Math.min(optionAmount, all_layers.length); i++) {
-                const needMoreRAAS = !bypassRaasFilter && rnd_layers.filter((l) => l.gamemode.toUpperCase() === 'RAAS').length < this.options.minRaasEntries;
-                let l;
-                let maxtries = 20;
-                do l = randomElement(needMoreRAAS ? all_layers.filter((l) => l.gamemode.toLowerCase() === "raas") : all_layers);
-                while ((rnd_layers.find(lf => lf.layerid === l.layerid) || rnd_layers.filter(lf => lf.map.name === l.map.name).length > (this.options.allowedSameMapEntries - 1)) && --maxtries >= 0)
-                if (maxtries > 0 && l) {
-                    // this.verbose(1,"Testing layer",l, maxtries);
-                    rnd_layers.push(l);
-                    this.nominations[i] = l.layerid
+        if (cmdLayers.length <= maxOptions) {
+            let i = 1;
+            for (const cl of cmdLayers) {
+                const cls = cl.toLowerCase().split('_'); //cls[0] = mod, cls[1] = map, cls[2] = gamemode, cls[3] = version, cls[4] = faction
+                const whitefilt = this.layerfilterWlist(sanitizedLayers);
+                const modfilt = whitefilt.filter((l) => (!cls[0] || (cls[0] === "*" || l.mod.startsWith(cls[0].toUpperCase()))));
+                const mapfilt = modfilt.filter((l) => (!cls[1] || (cls[1] === "*" || l.map.name.toLowerCase().startsWith(cls[1].toLowerCase()))));
+                const gamemodefilt = mapfilt.filter(l => (!cls[2] || (cls[2] === "*" || l.gamemode.toLowerCase().startsWith(cls[2].toLowerCase()))));
+                const versionfilt = gamemodefilt.filter(l => (!cls[3] || (cls[3] === "*" || l.version.toLowerCase().startsWith("v" + cls[3].replace(/v/gi, '')))));
+                const factionfilt = versionfilt.filter(l => (!cls[4] || (cls[4] === "*" || [this.getTranslation(l.teams[0]), this.getTranslation(l.teams[1])].includes(cls[4].toUpperCase()))));
+
+                const factionblack = this.layerfilterFactionBlacklist(factionfilt);
+                const gamemodewhite = this.layerfilterGamemodeWlist(factionblack);
+                const samemapfilt = gamemodewhite.filter((l) => rnd_layers.filter(l2 => l2.map.name === l.map.name).length < this.options.allowedSameMapEntries);
+                const prevmapfilt = this.layerfilterPrevMaps(samemapfilt);
+                if (factionfilt.length === 0) continue;
+                // this.verbose(1, 'fLayers', fLayers.map(l => l.layerid));
+                // this.verbose(1, 'rnd_layers', rnd_layers.map(l => l.layerid));
+
+                let rndl;
+                if (prevmapfilt.length > 0) rndl = randomElement(prevmapfilt);
+                else if(samemapfilt.length > 0) rndl = randomElement(samemapfilt);
+                else if(gamemodewhite.length > 0) rndl = randomElement(gamemodewhite);
+                else if(factionblack.length > 0) rndl = randomElement(factionblack);
+                else rndl = randomElement(factionfilt);
+                if(rndl){
+                    rnd_layers.push(rndl);
+                    this.nominations[i] = rndl.layerid;
                     this.tallies[i] = 0;
-                    this.factionStrings[i] = getTranslation(l.teams[0]) + "-" + getTranslation(l.teams[1]);
+                    this.factionStrings[i] = this.getTranslation(rndl.teams[0]) + "-" + this.getTranslation(rndl.teams[1]);
+                    i++;
                 }
             }
-            // if (!bypassRaasFilter && this.options.gamemodeWhitelist.includes("RAAS") && rnd_layers.filter((l) => l.gamemode === 'RAAS').length < Math.floor(maxOptions / 2)) this.populateNominations();
-            if (this.nominations.length === 0) {
-                if (--tries > 0) this.populateNominations(steamid, cmdLayers, bypassRaasFilter, tries);
-                else this.warn("")
-                return;
-            }
-        } else {
-            if (cmdLayers.length === 1) while (cmdLayers.length < optionAmount) cmdLayers.push(cmdLayers[0])
-
-            if (cmdLayers.length <= maxOptions) {
-                let i = 1;
-                for (const cl of cmdLayers) {
-                    const cls = cl.toLowerCase().split('_');
-                    const fLayers = sanitizedLayers.filter((l) => (
-                        rnd_layers.filter(l2 => l2.map.name === l.map.name).length < this.options.allowedSameMapEntries &&
-                        (![this.server.currentLayer ? this.server.currentLayer.map.name : null, ...recentlyPlayedMaps].includes(l.map.name) || cls[2]) &&
-                        (
-                            (
-                                (this.options.layerFilteringMode.toLowerCase() === "blacklist" && !this.options.layerLevelBlacklist.find((fl) => this.getLayersFromStringId(fl).map((e) => e.layerid).includes(l.layerid))) ||
-                                (
-                                    this.options.layerFilteringMode.toLowerCase() === "whitelist"
-                                    && this.options.layerLevelWhitelist.find((fl) => this.getLayersFromStringId(fl).map((e) => e.layerid).includes(l.layerid))
-                                    && !(this.options.applyBlacklistToWhitelist && this.options.layerLevelBlacklist.find((fl) => this.getLayersFromStringId(fl).map((e) => e.layerid).includes(l.layerid)))
-                                )
-                            ) || cls[2]
-                        )
-                        && (
-                            (cls[0] === "*" || l.layerid.toLowerCase().startsWith(cls[0]))
-                            || (cls[0].toLowerCase().startsWith('f:') && [getTranslation(l.teams[0]), getTranslation(l.teams[1])].includes(cls[0].substring(2).toUpperCase()))
-                        )
-                        && (l.gamemode.toLowerCase().startsWith(cls[1]) || (!cls[1] && this.options.gamemodeWhitelist.includes(l.gamemode.toUpperCase())))
-                        && (!cls[2] || l.version.toLowerCase().startsWith("v" + cls[2].replace(/v/gi, '')))
-                        // && !(this.options.factionsBlacklist.find((f) => [ getTranslation(l.teams[ 0 ]), getTranslation(l.teams[ 1 ]) ].includes(f)))
-                        && (cls[2] || !(
-                            this.options.layerLevelBlacklist.find((fl) => this.getLayersFromStringId(fl).map((e) => e.layerid).includes(l.layerid))
-                            || this.options.factionsBlacklist.find((f) => [getTranslation(l.teams[0]), getTranslation(l.teams[1])].includes(f))
-                        ))
-                    ));
-                    if (fLayers.length === 0) continue;
-                    // this.verbose(1, 'fLayers', fLayers.map(l => l.layerid));
-                    // this.verbose(1, 'rnd_layers', rnd_layers.map(l => l.layerid));
-                    let l;
-                    let maxtries = 10;
-                    do l = randomElement(fLayers); while ((rnd_layers.filter(lf => lf.map.name === l.map.name).length > (this.options.allowedSameMapEntries - 1)) && --maxtries >= 0  && !rnd_layers.find((e) => e === l))
-                    if (l) {
-                        rnd_layers.push(l);
-                        this.nominations[i] = l.layerid
-                        this.tallies[i] = 0;
-                        this.factionStrings[i] = getTranslation(l.teams[0]) + "-" + getTranslation(l.teams[1]);
-                        i++;
-                    }
-                }
-            } else if (steamid) {
-                this.warn(steamid, "You cannot start a vote with more than " + maxOptions + " options");
-                return;
-            }
+        } else if (steamid) {
+            this.warn(steamid, "You cannot start a vote with more than " + maxOptions + " options");
+            return;
         }
 
         if (this.options.showRerollOption && (isRandomVote || this.options.showRerollOptionInCustomVotes)) {
@@ -732,21 +687,6 @@ export default class MapVote extends DiscordBasePlugin {
 
         if (this.nominations[1] !== "")
             this.server.rcon.execute(`AdminSetNextLayer ${this.nominations[1]} `);
-
-        function getTranslation(t) {
-            if (translations[t.faction]) return translations[t.faction]
-            else {
-                const f = t.faction.split(' ');
-                if(f.length > 1) {
-                    let fTag = "";
-                    f.forEach((e) => {
-                        fTag += e[0]
-                    });
-                    return fTag.toUpperCase();
-                } else if (t.faction.length <= 5) return t.faction;
-                else return 'Unk'
-            }
-        }
     }
 
     // checks if there are enough players to start voting, if not binds itself to player connected
@@ -904,20 +844,7 @@ export default class MapVote extends DiscordBasePlugin {
     }
 
     formatFancyLayer(layer) {
-        const translations = {
-            'United States Army': "USA",
-            'United States Marine Corps': "USMC",
-            'Russian Ground Forces': "RGF",
-            'British Army': "BAF",
-            'British Armed Forces': "BAF",
-            'Canadian Army': "CAF",
-            'Australian Defence Force': "ADF",
-            'Irregular Militia Forces': "IMF",
-            'Middle Eastern Alliance': "MEA",
-            'Insurgent Forces': "INS",
-            'Unknown': "Unk"
-        }
-        const factionString = getTranslation(layer.teams[0]) + "-" + getTranslation(layer.teams[1]);
+        const factionString = this.getTranslation(layer.teams[0]) + "-" + this.getTranslation(layer.teams[1]);
 
         const helis = layer.teams[0].numberOfHelicopters + layer.teams[1].numberOfHelicopters
         const tanks = layer.teams[0].numberOfTanks + layer.teams[1].numberOfTanks
@@ -932,27 +859,13 @@ export default class MapVote extends DiscordBasePlugin {
             .replace(/\{map_version\}/i, layer.version)
             .replace(/\{factions\}/i, factionString)
             .replace(/\{main_assets\}/i, vehiclesString)
-
-        function getTranslation(t) {
-            if (translations[t.faction]) return translations[t.faction]
-            else {
-                const f = t.faction.split(' ');
-                if(f.length > 1) {
-                    let fTag = "";
-                    f.forEach((e) => {
-                        fTag += e[0]
-                    });
-                    return fTag.toUpperCase();
-                } else if (t.faction.length <= 5) return t.faction;
-                else return 'Unk'
-            }
-        }
     }
 
     getLayersFromStringId(stringid) {
-        const cls = stringid.toLowerCase().split('_');
-        const modLayers = this.getModLayers();
-        const ret = modLayers.filter((l) => ((cls[0] === "*" || l.layerid.toLowerCase().startsWith(cls[0])) && (l.gamemode.toLowerCase().startsWith(cls[1]) || (!cls[1] && ['RAAS', 'AAS', 'INVASION'].includes(l.gamemode.toUpperCase()))) && (!cls[2] || parseInt(l.version.toLowerCase().replace(/v/gi, '')) == parseInt(cls[2].replace(/v/gi, '')))));
+        // const cls = stringid.toLowerCase().split('_');
+        const modLayers = this.layerfilterCorrectLayers(Layers.layers);
+        const ret = modLayers.filter(l => l.layerid.toLowerCase().contains(stringid.replace(/\*/gi,'').toLowerCase()));
+        // const ret = modLayers.filter((l) => ((cls[0] === "*" || l.layerid.toLowerCase().startsWith(cls[0])) && (l.gamemode.toLowerCase().startsWith(cls[1]) || (!cls[1] && ['RAAS', 'AAS', 'INVASION'].includes(l.gamemode.toUpperCase()))) && (!cls[2] || parseInt(l.version.toLowerCase().replace(/v/gi, '')) == parseInt(cls[2].replace(/v/gi, '')))));
         // this.verbose(1,"layers from string",stringid,cls,ret)
         return ret;
     }
