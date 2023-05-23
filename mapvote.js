@@ -864,7 +864,7 @@ export default class MapVote extends DiscordBasePlugin {
     getLayersFromStringId(stringid) {
         // const cls = stringid.toLowerCase().split('_');
         const modLayers = this.layerfilterCorrectLayers(Layers.layers);
-        const ret = modLayers.filter(l => l.layerid.toLowerCase().contains(stringid.replace(/\*/gi,'').toLowerCase()));
+        const ret = modLayers.filter(l => l.layerid.toLowerCase().includes(stringid.replace(/\*/gi,'').toLowerCase()));
         // const ret = modLayers.filter((l) => ((cls[0] === "*" || l.layerid.toLowerCase().startsWith(cls[0])) && (l.gamemode.toLowerCase().startsWith(cls[1]) || (!cls[1] && ['RAAS', 'AAS', 'INVASION'].includes(l.gamemode.toUpperCase()))) && (!cls[2] || parseInt(l.version.toLowerCase().replace(/v/gi, '')) == parseInt(cls[2].replace(/v/gi, '')))));
         // this.verbose(1,"layers from string",stringid,cls,ret)
         return ret;
