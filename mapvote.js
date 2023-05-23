@@ -377,7 +377,7 @@ export default class MapVote extends DiscordBasePlugin {
 
     layerfilterWlist(layers){
         if(this.options.layerFilteringMode.toLowerCase() === "whitelist"){
-            const rawwl = layers.filter((l) => this.options.layerLevelWhitelist.find((fl) => this.getLayersFromStringId(fl).map((e => e.layerid).includes(l.layerid))));
+            const rawwl = layers.filter((l) => this.options.layerLevelWhitelist.find((fl) => this.getLayersFromStringId(fl).map((e) => e.layerid).includes(l.layerid)));
             if(this.options.applyBlacklistToWhitelist) return rawwl.filter((l) => !(this.options.layerLevelBlacklist.find((fl) => this.getLayersFromStringId(fl).map((e) => e.layerid).includes(l.layerid))));
             else return rawwl;
         } else {
