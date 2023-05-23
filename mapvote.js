@@ -636,7 +636,7 @@ export default class MapVote extends DiscordBasePlugin {
             for (const cl of cmdLayers) {
                 const cls = cl.toLowerCase().split('_'); //cls[0] = mod, cls[1] = map, cls[2] = gamemode, cls[3] = version, cls[4] = faction
                 const whitefilt = this.layerfilterWlist(sanitizedLayers);
-                const modfilt = whitefilt.filter((l) => (!cls[0] || (cls[0] === "*" || l.mod.startsWith(cls[0].toUpperCase()))));
+                const modfilt = whitefilt.filter((l) => (!cls[0] || (cls[0] === "*" || l.modName.startsWith(cls[0].toUpperCase()))));
                 const mapfilt = modfilt.filter((l) => (!cls[1] || (cls[1] === "*" || l.map.name.toLowerCase().startsWith(cls[1].toLowerCase()))));
                 const gamemodefilt = mapfilt.filter(l => (!cls[2] || (cls[2] === "*" || l.gamemode.toLowerCase().startsWith(cls[2].toLowerCase()))));
                 const versionfilt = gamemodefilt.filter(l => (!cls[3] || (cls[3] === "*" || l.version.toLowerCase().startsWith("v" + cls[3].replace(/v/gi, '')))));
