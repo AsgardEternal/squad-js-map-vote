@@ -621,7 +621,7 @@ export default class MapVote extends DiscordBasePlugin {
         if (isRandomVote) {
             for (const gm of Object.keys(this.options.minGamemodeEntries)) {
                 for (let i = 0; i < +this.options.minGamemodeEntries[gm] && cmdLayers.length < optionAmount; i++)
-                    cmdLayers.push(`*_${gm}`);
+                    cmdLayers.push(`*_*_${gm}`);
             }
             while (cmdLayers.length < optionAmount)
                 cmdLayers.push(`*`);
@@ -633,6 +633,7 @@ export default class MapVote extends DiscordBasePlugin {
 
         if (cmdLayers.length <= maxOptions) {
             let i = 1;
+            this.verbose(1, "cmdLayers: " + cmdLayers.join(", "));
             for (const cl of cmdLayers) {
                 const cls = cl.toLowerCase().split('_'); //cls[0] = mod, cls[1] = map, cls[2] = gamemode, cls[3] = version, cls[4] = faction
                 const whitefilt = this.layerfilterWlist(sanitizedLayers);
