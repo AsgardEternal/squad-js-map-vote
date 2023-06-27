@@ -429,10 +429,12 @@ export default class MapVote extends DiscordBasePlugin {
                             const nextMaps = seedingMaps.filter((l) => (!this.server.currentLayer || l.layerid !== this.server.currentLayer.layerid))
                             const rndMap2 = randomElement(nextMaps);
 
-                            if (this.server.players.length < this.options.nextLayerSeedingModePlayerCount && this.server.nextLayer.gamemode.toLowerCase() !== this.options.seedingGameMode) {
+                            if (this.server.players.length < this.options.nextLayerSeedingModePlayerCount && this.server.nextLayer.gamemode.toLowerCase() !== this.options.seedingGameMode && rndMap2) {
                                 const newNextMap = rndMap2.layerid;
                                 this.verbose(1, "setting next layer to seed mode");
                                 this.server.rcon.execute(`AdminSetNextLayer ${newNextMap} `);
+                            } else {
+                                this.verbose(1, "did not find suitable next seeding layer");
                             }
                         } else this.verbose(1, "Bad data (nextLayer). Seeding mode for next layer skipped to prevent errors.");
                     } else this.verbose(1, `Waiting 30 seconds from mapchange before entering seeding mode`);
