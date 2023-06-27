@@ -408,7 +408,7 @@ export default class MapVote extends DiscordBasePlugin {
                 const maxSeedingModePlayerCount = Math.max(this.options.nextLayerSeedingModePlayerCount, this.options.instantSeedingModePlayerCount);
                 if (this.server.players.length >= 1 && this.server.players.length < maxSeedingModePlayerCount) {
                     if (+(new Date()) - +this.server.layerHistory[0].time > 30 * 1000) {
-                        const filterMaps = this.layerfilterWlist(this.layerfilterCorrectLayers(Layers.layers));
+                        const filterMaps = this.layerfilterCorrectLayers(Layers.layers);
                         const seedingMaps = filterMaps.filter(l => l.gamemode.toLowerCase() === this.options.seedingGameMode);
                         this.verbose(1, seedingMaps);
 
