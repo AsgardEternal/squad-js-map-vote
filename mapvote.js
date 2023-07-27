@@ -645,7 +645,8 @@ export default class MapVote extends DiscordBasePlugin {
                 const versionfilt = gamemodefilt.filter(l => (!cls[3] || (cls[3] === "*" || l.version.toLowerCase().startsWith("v" + cls[3].replace(/v/gi, '')))));
                 const factionfilt = versionfilt.filter(l => (!cls[4] || (cls[4] === "*" || [this.getTranslation(l.teams[0]), this.getTranslation(l.teams[1])].includes(cls[4].toUpperCase()))));
 
-                const factionblack = this.layerfilterFactionBlacklist(factionfilt);
+                const samelayerfilt = factionfilt.filter((l) => !(rnd_layers.find((rl) => rl.layerid === l.layerid)));
+                const factionblack = this.layerfilterFactionBlacklist(samelayerfilt);
                 const gamemodewhite = this.layerfilterGamemodeWlist(factionblack);
                 const samemapfilt = gamemodewhite.filter((l) => rnd_layers.filter(l2 => l2.map.name === l.map.name).length < this.options.allowedSameMapEntries);
                 const prevmapfilt = this.layerfilterPrevMaps(samemapfilt);
