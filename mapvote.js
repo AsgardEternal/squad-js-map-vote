@@ -410,7 +410,7 @@ export default class MapVote extends DiscordBasePlugin {
                     if (+(new Date()) - +this.server.layerHistory[0].time > 30 * 1000) {
                         const filterMaps = this.layerfilterCorrectLayers(Layers.layers);
                         const seedingMaps = filterMaps.filter(l => l.gamemode.toLowerCase() === this.options.seedingGameMode);
-                        this.verbose(1, "Seeding Maps Found:" seedingMaps);
+                        this.verbose(1, "Seeding Maps Found:" + seedingMaps);
 
                         const rndMap = randomElement(seedingMaps);
                         if (this.server.currentLayer) {
