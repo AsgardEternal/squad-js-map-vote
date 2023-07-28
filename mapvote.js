@@ -410,7 +410,7 @@ export default class MapVote extends DiscordBasePlugin {
                     if (+(new Date()) - +this.server.layerHistory[0].time > 30 * 1000) {
                         const filterMaps = this.layerfilterCorrectLayers(Layers.layers);
                         const seedingMaps = filterMaps.filter(l => l.gamemode.toLowerCase() === this.options.seedingGameMode);
-                        this.verbose(1, seedingMaps);
+                        this.verbose(1, "Seeding Maps Found:" seedingMaps);
 
                         const rndMap = randomElement(seedingMaps);
                         if (this.server.currentLayer) {
@@ -418,9 +418,11 @@ export default class MapVote extends DiscordBasePlugin {
                             if (this.server.currentLayer.gamemode.toLowerCase() !== this.options.seedingGameMode) {
                                 this.verbose(1, "checking player count");
                                 if (this.server.players.length <= this.options.instantSeedingModePlayerCount) {
-                                    const newCurrentMap = rndMap.layerid;
-                                    this.verbose(1, 'Going into seeding mode.');
-                                    this.server.rcon.execute(`AdminChangeLayer ${newCurrentMap} `);
+                                    if(rndMap && rndMap.layerid){
+                                        const newCurrentMap = rndMap.layerid;
+                                        this.verbose(1, 'Going into seeding mode.');
+                                        this.server.rcon.execute(`AdminChangeLayer ${newCurrentMap} `);
+                                    } else this.verbose(1, "Bad seeding map found or no seeding maps found");
                                 }
                             }
                         } else this.verbose(1, "Bad data (currentLayer). Seeding mode for current layer skipped to prevent errors.");
