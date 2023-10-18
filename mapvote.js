@@ -865,6 +865,7 @@ export default class MapVote extends DiscordBasePlugin {
             .replace(/\{map_version\}/i, layer.version)
             .replace(/\{factions\}/i, factionString)
             .replace(/\{main_assets\}/i, vehiclesString)
+            .replace(/\{name\}/i, layer.name)
     }
 
     getLayersFromStringId(stringid) {
