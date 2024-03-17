@@ -297,7 +297,7 @@ true
 ```json
 {
     "plugin": "MapVote",
-    "enabled": true,
+    "enabled": false,
     "discordClient": "discord",
     "entriesAmount": 6,
     "entryFormat": "{map_name} {gamemode} {map_version} {factions} {main_assets}",
